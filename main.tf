@@ -1,6 +1,6 @@
 resource "aws_vpc" "vpc1" {
-  cidr_block       = "172.31.0.0/16"
-  instance_tenancy = "default"
+  cidr_block       = "172.17.0.0/16"
+  #instance_tenancy = "default"
   tags = {
     Name = "Terraform-vpc"
     env  = "dev"
@@ -13,21 +13,21 @@ resource "aws_internet_gateway" "gwy1" {
 # public subnet
 resource "aws_subnet" "public1" {
   availability_zone       = "ca-central-1a"
-  cidr_block              = "172.31.0.0/24"
+  cidr_block              = "172.17.0.0/24"
   map_public_ip_on_launch = true
   vpc_id                  = aws_vpc.vpc1.id
   tags = {
-     Name = "public-subnet-1"
-     env  = "dev"
+    Name = "public-subnet-1"
+    env  = "dev"
   }
 
 }
 resource "aws_subnet" "public2" {
   availability_zone       = "ca-central-1b"
-  cidr_block              = "172.31.2.0/24"
+  cidr_block              = "172.17.2.0/24"
   vpc_id                  = aws_vpc.vpc1.id
   map_public_ip_on_launch = true
-  
+
   tags = {
     Name = "public-subnet-2"
     env  = "dev"
@@ -44,8 +44,7 @@ resource "aws_instance" "server1" {
   vpc_security_group_ids = [aws_security_group.sg1.id]
   availability_zone      = "ca-central-1a"
   subnet_id              = aws_subnet.public1.id
-  #user_data = file("code.sh")
-  tags = {
+    tags = {
     Name = "webserver-1"
   }
 
@@ -56,7 +55,7 @@ resource "aws_instance" "server2" {
   vpc_security_group_ids = [aws_security_group.sg2.id]
   availability_zone      = "ca-central-1b"
   subnet_id              = aws_subnet.public2.id
-  #user_data = file("code.sh")
+  
   tags = {
     Name = "webserver-2"
   }
@@ -188,7 +187,7 @@ resource "aws_launch_configuration" "aconf" {
 resource "aws_autoscaling_group" "barn" {
   name                 = "terrafor"
   launch_configuration = aws_launch_configuration.aconf.name
-  availability_zones    = ["ca-central-1a", "ca-central-1b"]
+  vpc_zone_identifier = [aws_subnet.public1.id, aws_subnet.public1.id]
   min_size             = 2
   max_size             = 4
 
@@ -296,7 +295,6 @@ resource "aws_db_instance" "defo" {
   instance_class       = "db.t3.micro"
   username             = "admin"
   password             = "admin1234"
-  #parameter_group_name = aws_db_parameter_group.defo.name
   skip_final_snapshot  = true
   db_subnet_group_name = aws_db_subnet_group.dbgrp.name
 }
